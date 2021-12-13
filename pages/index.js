@@ -9,7 +9,7 @@ const About = () => {
                     <h1 class="text-3xl">Friday Team FilEncrypted</h1>
                 </div>
             </div>
-            <p className="text-center text-2xl text-blue-400"><a href="../">Web Sitemiz</a></p>
+            <p className="text-center text-2xl text-blue-400"><a href="#">Web Sitemiz</a></p>
 
             <div className="flex flexrap flex-col md:flex-row justify-evenly items-center">
                 <div className="m-4">
@@ -165,7 +165,7 @@ const About = () => {
             <div className="flex justify-center">
                 <div className="m-2">
                     <a
-                        href="https://drive.google.com/file/d/14HN6jKMHDfeq4wpeSXLClouV2OTswg5K/view?usp=sharing"
+                        href="https://docs.google.com/document/d/13zMK4DFD9w50eq4C5L6DYBplOMLIcw1P/edit"
                         target="_blank"
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
                     >
@@ -185,11 +185,11 @@ const About = () => {
 
                 <div className="m-2">
                     <a
-                        href="#"
+                        href="result.mp4"
                         target="_blank"
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
                     >
-                        <span>Sunum Videosu(Eklenecek)</span>
+                        <span>Sunum Videosu</span>
                     </a>
                 </div>
 
@@ -214,6 +214,14 @@ const About = () => {
                         title="En İyi Ürünü Müşteriyi En Çok Anlayan Yapabilir"
                         content="Şifrelemeler, dosyalar, arayüzler..."
                         videoId="G_GRR1Scns8"
+                    />
+                </div>
+
+                <div>
+                    <BasicCard
+                        title="Sunum Videosu"
+                        content="13.12.2021 Tarihinde Çekilen Sunum Videosu"
+                        videoId="UoUg2PmvbB4"
                     />
                 </div>
 
