@@ -33,7 +33,7 @@ const About = () => {
                 <div className="m-4">
                     <img className="rounded-full" src="karamemis.jpg"  width="200px" />
                     <p className="text-center">Batuhan Karamemiş</p>
-                    <p className="text-center">200541078</p>
+                    <p className="text-center">200541071</p>
                 </div>
                 <div className="m-4">
                     <img className="rounded-full" src="batuhan.jpg" width="200px" />
