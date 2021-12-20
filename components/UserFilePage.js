@@ -5,9 +5,11 @@ import FileCard from "./common/FileCard/FileCard";
 
 const UserFilePage = (props) => {
 
+    const [userInfo, setUserInfo] = useState(null);
     const [userFiles, setUserFiles] = useState([]);
 
     useEffect(async () => {
+        await load_user_info();
         await load_files();
     }, [])
 
@@ -20,8 +22,21 @@ const UserFilePage = (props) => {
         }
     }
 
+    const load_user_info = async () => {
+        try {
+            const { data } = await axios.get("/user/info");
+            setUserInfo(data.info);
+        } catch (error) {
+
+        }
+    }
+
     const ss = () => {
         alert(axios.defaults.headers.common['Authorization'])
+    }
+
+    if(userInfo == null){
+        return <><span>Loading...</span></>
     }
 
     return (
@@ -31,7 +46,7 @@ const UserFilePage = (props) => {
             {
                 userFiles.map((file, index) => {
                     return (<>
-                        <FileCard file_id={file._id} file_name={file.file_name} file_size={file.file_size} />
+                        <FileCard file={file} user_info={userInfo} />
                     </>)
                 })
             }
