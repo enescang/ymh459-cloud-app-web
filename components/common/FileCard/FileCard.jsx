@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
-
+import CryptoJS from 'crypto-js';
 import base64_data from './base64';
 import dynamic from 'next/dynamic'
 
@@ -11,6 +11,8 @@ const CLASS = {
 }
 
 const FileCard = (props) => {
+
+    const [RSA_PRIVATE_KEY, setRSA_PRIVATE_KEY] = useState(null);
 
     const { file, user_info } = props;
     const { file_name, file_size } = file;
@@ -27,34 +29,108 @@ const FileCard = (props) => {
 
     const download_file = async () => {
         try {
-            const { file_id } = props;
-            const { data } = await axios.get(`/file/download?file_id=${file_id}`);
-            window.open(data, "_blank");
+            const { file: { _id } } = props;
+            const new_axios = axios.create();
+            const { data } = await axios.get(`/file/download?file_id=${_id}`);
+            console.log("DOWNLOADED FILE URL:", data);
+            delete new_axios.defaults.headers.common['Authorization'];
+            const { data: file_data } = await new_axios.get(`${data}`, { responseType: "text" });
+            console.log("DOWNLOADED FILE DATA:", file_data);
+
+            return file_data;
         } catch (error) {
-            alert(error)
+            console.log("ERROR DOWNLOADING FILE", error);
+            return { error };
         }
     }
 
+    const get_unencrypted_aes_key = async () => {
+        const JSEncrypt = require("jsencrypt").default;
+        let { public_key } = user_info;
+        console.log("PUBLIC KEY", public_key);
+
+        const private_key = `
+        -----BEGIN RSA PRIVATE KEY-----
+MIICWwIBAAKBgQDAoj/CrK3n/2SfEyiRgtsAvCDVNt3brE7NTYHFVWheyZHkwkJI
+rKBgAWM4d+lXdW6JMkrpFmg2YLulZQ5o3TYLQVqvvP52G7kLMQEJgRP2AT9gFK4c
+aN2aYy1oF3+dvAVmRBLKHBLtMjsWr8QzFtmz4rLiQD5rni4I2+wbcUiFswIDAQAB
+AoGAHRWiONtnmnqmD5qN6oJuXIsLDgYtsygt8bN9H3VIv98BRx/JcD2YLUaoW3NH
+aOwTF2Xfh5fZfjRWwJ8kcNLNgNwaEJMhXFuwg3burMsS3zSxXxSvIdXEPOb1VAYm
+08GBUmMc6ZT0RtlrIirsaow2qf5Ibh+ZFuKSmnnbRlxws9kCQQD2/7RyL3lWj65W
+9vajl4p0fdxUkiJ4Ioaz+UTLwlpM3Ply5H+xh5qvMHxv/a0KeYqOe+sVoggPt+e+
+3+6OXF5/AkEAx6dc8+GncbP0Ahxl3jF2c/tX+WI0VdXWNVD8N51xlKTYOZdPxmsK
+IYF3tYCUkmlDTjOXd2sXRQ0JlZBs87YmzQJADke4WgWuoTeLX9HFbq3bPmLscyND
+xOhSG2Ok+5bP+7Om5GKbk1sAsXI/L4ZeE8X1Icm+TLDigG4kgt+VfjuO5wJAd0n7
+EshPmHMRprU69DAPeyrAnINdi6+RJhf2KnCKrWp0uqw6gO3xhqVpVeu2WWhFS5Mt
+u68jnyE0CcXaIx9BPQJASMLWXUDWKw6BUcKfg6qbmIfnLutCCGRwlLHynI3BL96O
+EXkiG/uzxJ2LcQpSTGduZq2XSE28Ey6M5/9oUk8LXA==
+-----END RSA PRIVATE KEY-----`;
+
+        var decrypt = new JSEncrypt();
+        decrypt.setPrivateKey(private_key);
+        var uncrypted = decrypt.decrypt(props.file.encrypted_aes_key);
+        console.log("UNCRYPTED", uncrypted)
+        return uncrypted;
+    }
+
+    const decrypt_file = async () => {
+        // if(!RSA_PRIVATE_KEY) {
+        //     return alert("Lütfen RSA Private Key'inizi giriniz.");
+        // }
+        const { file } = props;
+        const cipher_text = await download_file()
+        const uncrypted_aes = await get_unencrypted_aes_key();
+
+        let bytes = CryptoJS.AES.decrypt(cipher_text, uncrypted_aes);
+        let originalText = bytes.toString(CryptoJS.enc.Utf8);
+        console.log("DECRYPTED", originalText.length)
+        console.log("DECRYPTED", originalText)
+
+        const get_as_a_file = await dataUrlToFile(originalText, file.file_name, file.file_mime);
+        console.log("GET AS A FILE", get_as_a_file)
+        return originalText;
+    }
+
+    const convert_from_base64 = async (base64_data) => {
+        const t = decodeURIComponent(atob(base64_data).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        console.log("CONVERTED", t)
+        return t
+    }
+
+    const convert_from_ascii= async (base64_data) => {
+        const strarr = base64_data.split(",")
+        let result = "";
+        for(let i=0; i<strarr.length; i++) {
+            result += String.fromCharCode(parseInt(strarr[i].replace(/[^\d]/g, '')));
+        }
+        return result
+    }
+
+    async function dataUrlToFile(data, fileName, file_mime) {
+        var csvContent = await convert_from_ascii(data); //here we load our csv data
+        var blob = new Blob([csvContent], {
+            type: `application/octet-stream;charset=utf-8;`,
+        });
+        var a = document.createElement("a");
+        const url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = file_name;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        return "NNNNNN"
+    }
+
+
+    /*
     const decrypt_aes = async() => {
         const JSEncrypt = require("jsencrypt").default;
         let { public_key } = user_info;
         console.log("PUBLIC KEY", public_key)
 
         const private_key = `-----BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQC1WCm8dM2ZmGxIcaPaNtWUuzebhitPQ4QDi31WG4iz3u6zdcBJ
-MgwWxJ0JvHo1qK34lTBJgVyQjLO7Wlcr+RzuvVLIqHrZnj41Jdg6Ou8bLTW9ls/I
-BOoLHy4QF+bAjmi5U9915kUiR84VsyVCKAoietEFcul2uoKLDbTmcWpMeQIDAQAB
-AoGAAzbxoHVamq0syDj5fFoJ/bW25eMiO+i4u55apa7dxMCALz64XqPMOpAYL46/
-hNl9YgF1BmyMYUSZQAo5Lt6e4GXLBd1VEgo7e6DOZvoDae/edQlLUkhuPjC4LGhq
-rWneKzsMy7fHT2BVkMGfaqjN9owr+wCHgsDaF+C0KU3s1L0CQQD/pnywc44WrNkO
-bsm6vNCet70k2vCyZQMgHyVdv81a2j/bgmJcimJG6APDBIibC4ekG0PLDqevPa9b
-AMFdicolAkEAtZeomxtuR35wk3deq6GHCZXEHz5eSmpzmBI/0fytx2XoNN+UNdKD
-tDor5hA++8CNQcwjtmU9sY/zC6oPy0tmxQJAVnliQ+1Saqkc4pzm75teldFg0U6d
-jDpOzFa8tPFj7Q9V+lIoI1VL2OAyJY0rCAbmYsQ2MkFKxyP+ZLHktlcdYQJAOzDO
-ApD0Z1VteIPmVed2zscEgHKh5XvBZgY8y0OjmWU8RU/DTa/qwipb+Me+3+ypnpLd
-6Swi6efT/y9VqpxPSQJAYuPj5hc4uvf+PI52qPhOXgaV86Q9sVS1Qx3jaQmbzYSf
-GyugZt04Dp9rQjE9dTBLlTIamm55XnW+Y6dnJmxmrw==
------END RSA PRIVATE KEY-----`
+        -----END RSA PRIVATE KEY-----`
 
 
         var decrypt = new JSEncrypt();
@@ -111,9 +187,9 @@ GyugZt04Dp9rQjE9dTBLlTIamm55XnW+Y6dnJmxmrw==
     const fromHex = hexString => new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
     const fromBase64 = base64String => Uint8Array.from(atob(base64String), c => c.charCodeAt(0));
     const ctUint8 = (ctStr)=> new Uint8Array(ctStr.match(/[\s\S]/g).map(ch => ch.charCodeAt(0)));
+    */
 
-
-    const enxAes = (key)=> {
+    const enxAes = (key) => {
         window.crypto.subtle.encrypt(
             {
                 name: "AES-CBC",
@@ -124,13 +200,13 @@ GyugZt04Dp9rQjE9dTBLlTIamm55XnW+Y6dnJmxmrw==
             key, //from generateKey or importKey above
             str2ab("enesQ") //ArrayBuffer of data you want to encrypt
         )
-        .then(function(encrypted){
-            //returns an ArrayBuffer containing the encrypted data
-            console.log(new Uint8Array(encrypted));
-        })
-        .catch(function(err){
-            console.error(err);
-        });
+            .then(function (encrypted) {
+                //returns an ArrayBuffer containing the encrypted data
+                console.log(new Uint8Array(encrypted));
+            })
+            .catch(function (err) {
+                console.error(err);
+            });
     }
 
     return (
@@ -150,7 +226,7 @@ GyugZt04Dp9rQjE9dTBLlTIamm55XnW+Y6dnJmxmrw==
 
                     <span
                         className={CLASS.span_badge}
-                        onClick={decrypt_aes}
+                        onClick={decrypt_file}
                     >
                         İndir
                     </span>

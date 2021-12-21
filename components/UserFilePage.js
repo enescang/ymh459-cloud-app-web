@@ -42,7 +42,7 @@ const UserFilePage = (props) => {
     return (
         <>
             <Header />
-
+            <div className="flex flex-row">
             {
                 userFiles.map((file, index) => {
                     return (<>
@@ -50,7 +50,7 @@ const UserFilePage = (props) => {
                     </>)
                 })
             }
-
+            </div>
         </>)
 }
 

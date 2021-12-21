@@ -2,21 +2,43 @@ import '../styles/globals.css'
 import 'tailwindcss/tailwind.css'
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import Router from 'next/router'
 
 function MyApp({ Component, pageProps }) {
   axios.defaults.baseURL = "http://localhost:4000";
 
   const [start_app, setStartApp] = useState(false);
-  
-  useEffect(()=>{
+
+  useEffect(() => {
+    setInterceptors();
     const token = localStorage.getItem('friday_token');
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setTimeout(()=>{
+    setTimeout(() => {
       setStartApp(true);
     }, 0)
   }, []);
 
-  if(start_app == false)
+  const setInterceptors = () => {
+    axios.interceptors.response.use(
+      (response) => {
+        return response;
+      },
+      (err) => {
+        return new Promise((resolve, reject) => {
+          if (err.response.status === 401 && err.config && !err.config.__isRetryRequest) {
+            // if you ever get an unauthorized response, logout the user
+            localStorage.removeItem("friday_token");
+            axios.defaults.headers.common['Authorization'] = null;
+            Router.push('/login');
+          }
+          throw err;
+        });
+      }
+    );
+  };
+
+
+  if (start_app == false)
     return <div>Loading...</div>
   return <Component {...pageProps} />
 }
