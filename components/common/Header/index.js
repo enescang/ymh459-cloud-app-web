@@ -1,5 +1,15 @@
 
+import axios from 'axios';
+import Router from 'next/router'
+
 const Header = (props) => {
+
+    const sign_out =()=>{
+        localStorage.removeItem('friday_token');
+        delete axios.defaults.headers.common['Authorization'];
+        Router.push('../');
+    }
+
     return (
         <>
             {/* This example requires Tailwind CSS v2.0+ */}
@@ -98,6 +108,7 @@ const Header = (props) => {
                                     </a>
                                     <a
                                         href="#"
+                                        onClick={sign_out}
                                         className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                                     >
                                         Çıkış Yap

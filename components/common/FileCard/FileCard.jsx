@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
 import base64_data from './base64';
 import dynamic from 'next/dynamic'
+import Modal from 'react-modal';
 
 const CLASS = {
     main_div: "max-w-sm rounded overflow-hidden shadow-lg border-8 border-indigo-600 m-4",
@@ -12,7 +13,9 @@ const CLASS = {
 
 const FileCard = (props) => {
 
+    const [showModal, setShowModal] = useState(false);
     const [RSA_PRIVATE_KEY, setRSA_PRIVATE_KEY] = useState(null);
+    const [currentStage, setCurrentStage] = useState("Dosyanız şuan şifreli haldedir.");
 
     const { file, user_info } = props;
     const { file_name, file_size, file_mime } = file;
@@ -31,8 +34,12 @@ const FileCard = (props) => {
         try {
             const { file: { _id } } = props;
             const new_axios = axios.create();
+            setCurrentStage("Dosya bilgisi alınıyor...");
+
             const { data } = await axios.get(`/file/download?file_id=${_id}`);
             console.log("DOWNLOADED FILE URL:", data);
+
+            setCurrentStage("Dosya indiriliyor...");
             delete new_axios.defaults.headers.common['Authorization'];
             const { data: file_data } = await new_axios.get(`${data}`, { responseType: "text" });
             console.log("DOWNLOADED FILE DATA:", file_data);
@@ -45,53 +52,55 @@ const FileCard = (props) => {
     }
 
     const get_unencrypted_aes_key = async () => {
-        const JSEncrypt = require("jsencrypt").default;
-        let { public_key } = user_info;
-        console.log("PUBLIC KEY", public_key);
-
-        const private_key = `
-        -----BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQDAoj/CrK3n/2SfEyiRgtsAvCDVNt3brE7NTYHFVWheyZHkwkJI
-rKBgAWM4d+lXdW6JMkrpFmg2YLulZQ5o3TYLQVqvvP52G7kLMQEJgRP2AT9gFK4c
-aN2aYy1oF3+dvAVmRBLKHBLtMjsWr8QzFtmz4rLiQD5rni4I2+wbcUiFswIDAQAB
-AoGAHRWiONtnmnqmD5qN6oJuXIsLDgYtsygt8bN9H3VIv98BRx/JcD2YLUaoW3NH
-aOwTF2Xfh5fZfjRWwJ8kcNLNgNwaEJMhXFuwg3burMsS3zSxXxSvIdXEPOb1VAYm
-08GBUmMc6ZT0RtlrIirsaow2qf5Ibh+ZFuKSmnnbRlxws9kCQQD2/7RyL3lWj65W
-9vajl4p0fdxUkiJ4Ioaz+UTLwlpM3Ply5H+xh5qvMHxv/a0KeYqOe+sVoggPt+e+
-3+6OXF5/AkEAx6dc8+GncbP0Ahxl3jF2c/tX+WI0VdXWNVD8N51xlKTYOZdPxmsK
-IYF3tYCUkmlDTjOXd2sXRQ0JlZBs87YmzQJADke4WgWuoTeLX9HFbq3bPmLscyND
-xOhSG2Ok+5bP+7Om5GKbk1sAsXI/L4ZeE8X1Icm+TLDigG4kgt+VfjuO5wJAd0n7
-EshPmHMRprU69DAPeyrAnINdi6+RJhf2KnCKrWp0uqw6gO3xhqVpVeu2WWhFS5Mt
-u68jnyE0CcXaIx9BPQJASMLWXUDWKw6BUcKfg6qbmIfnLutCCGRwlLHynI3BL96O
-EXkiG/uzxJ2LcQpSTGduZq2XSE28Ey6M5/9oUk8LXA==
------END RSA PRIVATE KEY-----`;
-
-        var decrypt = new JSEncrypt();
-        decrypt.setPrivateKey(private_key);
-        var uncrypted = decrypt.decrypt(props.file.encrypted_aes_key);
-        console.log("UNCRYPTED", uncrypted)
-        return uncrypted;
+        try{
+            setCurrentStage("RSA anahtarınız kontrol ediliyor...");
+            const JSEncrypt = require("jsencrypt").default;
+            let { public_key } = user_info;
+            console.log("PUBLIC KEY", public_key);
+    
+            let private_key = null;
+            private_key = RSA_PRIVATE_KEY;
+    
+            var decrypt = new JSEncrypt();
+            decrypt.setPrivateKey(private_key);
+            var uncrypted = decrypt.decrypt(props.file.encrypted_aes_key);
+            console.log("UNCRYPTED", uncrypted)
+            return uncrypted;
+        }catch(err){
+            return false;
+        }
     }
 
     const decrypt_file = async () => {
-        // if(!RSA_PRIVATE_KEY) {
-        //     return alert("Lütfen RSA Private Key'inizi giriniz.");
-        // }
+        if(!RSA_PRIVATE_KEY) {
+            setShowModal(true);
+            return;
+        }
         const { file } = props;
         const cipher_text = await download_file()
         const uncrypted_aes = await get_unencrypted_aes_key();
+        if(!uncrypted_aes) {
+            setCurrentStage("RSA anahtarınız hatalı!");
+            alert("RSA anahtarınız hatalı. Lütfen doğru anahtarınızı giriniz.");
+            setRSA_PRIVATE_KEY(null);
+            return;
+        }
 
+        setCurrentStage("Dosya şifresi çözülüyor...");
         let bytes = CryptoJS.AES.decrypt(cipher_text, uncrypted_aes);
         let originalText = bytes.toString(CryptoJS.enc.Utf8);
         console.log("DECRYPTED", originalText.length)
         console.log("DECRYPTED", originalText)
 
+        setCurrentStage("Sizin için dosyanızı oluşturuyoruz...");
         const get_as_a_file = await dataUrlToFile(originalText, file.file_name, file.file_mime);
         console.log("GET AS A FILE", get_as_a_file)
+        setCurrentStage("Dosyanız hazır!");
         return originalText;
     }
 
     const convert_from_base64 = async (base64_data) => {
+
         // const dec = CryptoJS.enc.Base64.parse(base64_data);
         // console.log("convert_from_base64DEC -> CryptoJS.enc.Base64:", dec.toString(CryptoJS.enc.Base64));
         // const base64_to_string = dec.toString(CryptoJS.enc.Base64);
@@ -107,6 +116,7 @@ EXkiG/uzxJ2LcQpSTGduZq2XSE28Ey6M5/9oUk8LXA==
         // base64Data += base64Data.replace('+', ' ');
         // binaryData = new Buffer(base64Data, 'base64').toString('binary');
         // console.log("BINARY DATA ", binaryData)
+
         if(!file_mime.match(/text/)) {
             window.open(`data:${file_mime};base64,${base64_data}`, "_blank");
             return "not_text";
@@ -259,13 +269,78 @@ EXkiG/uzxJ2LcQpSTGduZq2XSE28Ey6M5/9oUk8LXA==
             });
     }
 
+    const RsaModal = ()=> {
+        let subtitle;
+        const [modalIsOpen, setIsOpen] = React.useState(true);
+
+        useEffect(()=>{
+            openModal();
+        }, [props.show])
+      
+        function openModal() {
+          setIsOpen(true);
+        }
+      
+        function afterOpenModal() {
+          // references are now sync'd and can be accessed.
+          subtitle.style.color = '#f00';
+        }
+      
+        function closeModal() {
+          setIsOpen(false);
+          setShowModal(false);
+        }
+
+        const customStyles = {
+            content: {
+              top: '50%',
+              left: '50%',
+              right: 'auto',
+              bottom: 'auto',
+              marginRight: '-50%',
+              transform: 'translate(-50%, -50%)',
+            },
+          };
+      
+        return (
+          <div>
+            {/* <button onClick={openModal}>Open Modal</button> */}
+            <Modal
+              isOpen={modalIsOpen}
+              onAfterOpen={afterOpenModal}
+              onRequestClose={closeModal}
+              style={customStyles}
+              contentLabel="Example Modal"
+            >
+              <h2 ref={(_subtitle) => (subtitle = _subtitle)}>Lütfen Private RSA Anahtarını Giriniz</h2>
+              <button onClick={closeModal}>Kapat</button>
+              <form>
+                <textarea
+                onChange={(event)=>{
+                    setRSA_PRIVATE_KEY(event.target.value);
+                }}
+                value={RSA_PRIVATE_KEY}
+                ></textarea>
+                {/* <button>tab navigation</button>
+                <button>stays</button>
+                <button>inside</button>
+                <button>the modal</button> */}
+              </form>
+            </Modal>
+          </div>
+        );
+      }
+
     return (
         <>
+        {
+            showModal ? <RsaModal show={showModal} />: ""
+        }
             <div className={CLASS.main_div} style={{width:"20rem"}}>
                 <div className="px-6 py-4">
                     <div className="font-bold text-xl mb-2">{file_name}</div>
-                    <p className="text-gray-700 text-base">
-                        Dosyanız şuan şifreli haldedir.
+                    <p className={currentStage.match(/hata/) ? "text-red-500 text-base" : "text-gray-700 text-base"}>
+                        {currentStage}
                     </p>
                 </div>
                 <div className="px-6 pt-4 pb-2">
