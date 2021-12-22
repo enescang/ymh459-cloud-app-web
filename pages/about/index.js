@@ -1,5 +1,5 @@
 import YouTube from 'react-youtube';
-import BasicCard from '../components/BasicCard';
+import BasicCard from '../../components/BasicCard';
 
 const About = () => {
     return (
@@ -9,7 +9,7 @@ const About = () => {
                     <h1 class="text-3xl">Friday Team FilEncrypted</h1>
                 </div>
             </div>
-            <p className="text-center text-2xl text-blue-400"><a href="#">Web Sitemiz</a></p>
+            <p className="text-center text-2xl text-blue-400"><a href="/">Web Sitemiz</a></p>
 
             <div className="flex flexrap flex-col md:flex-row justify-evenly items-center">
                 <div className="m-4">
