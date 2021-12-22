@@ -42,7 +42,7 @@ const UserFilePage = (props) => {
     return (
         <>
             <Header />
-            <div className="flex flex-row">
+            <div className="flex flex-wrap w-full">
             {
                 userFiles.map((file, index) => {
                     return (<>

@@ -15,7 +15,7 @@ const FileCard = (props) => {
     const [RSA_PRIVATE_KEY, setRSA_PRIVATE_KEY] = useState(null);
 
     const { file, user_info } = props;
-    const { file_name, file_size } = file;
+    const { file_name, file_size, file_mime } = file;
 
     const size_converter = (size) => {
         if (size < 1024) {
@@ -92,27 +92,77 @@ EXkiG/uzxJ2LcQpSTGduZq2XSE28Ey6M5/9oUk8LXA==
     }
 
     const convert_from_base64 = async (base64_data) => {
-        const t = decodeURIComponent(atob(base64_data).split('').map(function(c) {
+        // const dec = CryptoJS.enc.Base64.parse(base64_data);
+        // console.log("convert_from_base64DEC -> CryptoJS.enc.Base64:", dec.toString(CryptoJS.enc.Base64));
+        // const base64_to_string = dec.toString(CryptoJS.enc.Base64);
+        // const last = decode_base64(base64_to_string);
+        // console.log("LAST -> CryptoJS.enc.Base64:", last);
+        // return last;
+        // return dec.toString(CryptoJS.enc.Base64);
+
+        // const data = base64_data
+        // let  base64Data,binaryData;
+
+        // base64Data = data.replace(/^data:image\/png;base64,/, "");
+        // base64Data += base64Data.replace('+', ' ');
+        // binaryData = new Buffer(base64Data, 'base64').toString('binary');
+        // console.log("BINARY DATA ", binaryData)
+        if(!file_mime.match(/text/)) {
+            window.open(`data:${file_mime};base64,${base64_data}`, "_blank");
+            return "not_text";
+        }
+        // return binaryData;
+
+        const t = decodeURIComponent(atob(base64_data).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         console.log("CONVERTED", t)
         return t
     }
 
-    const convert_from_ascii= async (base64_data) => {
+    const convert_from_ascii = async (base64_data) => {
+        // return base64_data;
         const strarr = base64_data.split(",")
         let result = "";
-        for(let i=0; i<strarr.length; i++) {
-            result += String.fromCharCode(parseInt(strarr[i].replace(/[^\d]/g, '')));
+        for (let i = 0; i < strarr.length; i++) {
+            let elem = parseInt(strarr[i]);
+            if (elem < 0) {
+                elem = 256 - Math.abs(elem);
+            } else {
+                elem = elem;
+            }
+            if (i < 100) {
+                console.log("ELEM", elem, String.fromCharCode(elem))
+            }
+            result += String.fromCharCode(elem);
         }
         return result
     }
 
     async function dataUrlToFile(data, fileName, file_mime) {
-        var csvContent = await convert_from_ascii(data); //here we load our csv data
-        var blob = new Blob([csvContent], {
-            type: `application/octet-stream;charset=utf-8;`,
+        var file_utf8_content = await convert_from_base64(data); //here we load our csv data
+        if(file_utf8_content == "not_text") {
+            return;
+        }
+        var blob = new Blob([file_utf8_content], {
+            type: "octet/stream"
         });
+
+        ///
+        // var reader = new FileReader();
+        // var fileByteArray = [];
+        // reader.readAsArrayBuffer(blob);
+        // reader.onloadend = function (evt) {
+        //     if (evt.target.readyState == FileReader.DONE) {
+        //         var arrayBuffer = evt.target.result,
+        //             array = new Uint8Array(arrayBuffer);
+        //         for (var i = 0; i < array.length; i++) {
+        //             fileByteArray.push(array[i]);
+        //         }
+        //     }
+        // }
+        // console.log("FILE BYTE ARRAY", fileByteArray)
+        //
         var a = document.createElement("a");
         const url = window.URL.createObjectURL(blob);
         a.href = url;
@@ -211,7 +261,7 @@ EXkiG/uzxJ2LcQpSTGduZq2XSE28Ey6M5/9oUk8LXA==
 
     return (
         <>
-            <div className={CLASS.main_div}>
+            <div className={CLASS.main_div} style={{width:"20rem"}}>
                 <div className="px-6 py-4">
                     <div className="font-bold text-xl mb-2">{file_name}</div>
                     <p className="text-gray-700 text-base">
