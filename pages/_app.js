@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import Router from 'next/router'
 
 function MyApp({ Component, pageProps }) {
-  axios.defaults.baseURL = "http://localhost:4000";
+  axios.defaults.baseURL = "https://ymh459-cloud-app-api.herokuapp.com";
 
   const [start_app, setStartApp] = useState(false);
 
