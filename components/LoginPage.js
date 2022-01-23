@@ -23,7 +23,7 @@ const LoginPage = (props) => {
 
     const request_login = async (event) => {
         event.preventDefault();
-        if(email.length == 0 || password.length == 0){
+        if (email.length == 0 || password.length == 0) {
             setError("Lütfen email ve şifre alanlarını doldurunuz");
             return;
         }
@@ -95,6 +95,9 @@ const LoginPage = (props) => {
                             >
                                 start your 14-day free trial
                             </a> */}
+                        </p>
+                        <p className="mt-4 text-center text-sm text-gray-600">
+                            <a className='text-center text-sm text-gray-600' href='/about'>Hakkımızda</a>
                         </p>
                     </div>
                     <form className="mt-8 space-y-6" action="#" method="POST">
