@@ -163,6 +163,16 @@ const About = () => {
 
             <p className="text-center text-3xl">Dökümanlar</p>
             <div className="flex justify-center">
+            <div className="m-2">
+                    <a
+                        href="https://docs.google.com/document/d/13FE1uyutLuJkp87YumQHWeK7JPUZxdADaNyk0D9eTX8/edit?usp=sharing"
+                        target="_blank"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
+                    >
+                        <span>Ekip</span>
+                    </a>
+                </div>
+
                 <div className="m-2">
                     <a
                         href="https://docs.google.com/document/d/13zMK4DFD9w50eq4C5L6DYBplOMLIcw1P/edit"
@@ -175,11 +185,11 @@ const About = () => {
 
                 <div className="m-2">
                     <a
-                        href="#"
+                        href="https://drive.google.com/file/d/17oydEqT6LVqGOBrWCFSyDZUpSb3f9lZP/view?usp=sharing"
                         target="_blank"
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
                     >
-                        <span>Kullanıcı Klavuzu (Eklenecek)</span>
+                        <span>Kullanıcı El Klavuzu</span>
                     </a>
                 </div>
 
